@@ -1,0 +1,894 @@
+Apache Flink is a distributed stream processor with intuitive and expressive APIs to implement stateful stream processing applications.
+
+Instead of running analytical queries directly on the transactional databases, the data is typically replicated to a data warehouse, a dedicated datastore for analytical query workloads. In order to populate a data warehouse, the data managed by the transactional database systems needs to be copied to it. The process of copying data to the data warehouse is called extract–transform–load (ETL). An ETL process extracts data from a transactional database, transforms it into a common representation that might include validation, value normalization, encoding, deduplication, and schema transformation, and finally loads it into the analytical database. ETL processes can be quite complex and often require technically sophisticated solutions to meet performance requirements. ETL processes need to run periodically to keep the data in the data warehouse synchronized. Once the data has been imported into the data warehouse it can be queried and analyzed. Typically, there are two classes of queries
+
+Instead of running analytical queries directly on the transactional databases, the data is typically replicated to a data warehouse, a dedicated datastore for analytical query workloads.
+
+The process of copying data to the data warehouse is called extract–transform–load (ETL).
+
+An ETL process extracts data from a transactional database, transforms it into a common representation that might include validation, value normalization, encoding, deduplication, and schema transformation, and finally loads it into the analytical database. ETL processes can be quite complex and often require technically sophisticated solutions to meet performance requirements. ETL processes need to run periodically to keep the data in the data warehouse synchronized. Once the data has been imported into the data warehouse it can be queried and analyzed. Typically, there are two classes of queries
+
+An ETL process extracts data from a transactional database, transforms it into a common representation that might include validation, value normalization, encoding, deduplication, and schema transformation, and finally loads it into the analytical database.
+
+SQL-on-Hadoop engine, for example Apache Hive,
+
+significant amounts of data, such as log files, social media, or web click logs, are written into Hadoop’s distributed filesystem (HDFS), S3, or other bulk datastores, like Apache HBase, which provide massive storage capacity at a small cost.
+
+Any application that processes a stream of events and does not just perform trivial record-at-a-time transformations needs to be stateful, with the ability to store and access intermediate data.
+
+Apache Flink stores the application state locally in memory or in an embedded database.
+
+Since Flink is a distributed system, the local state needs to be protected against failures to avoid data loss in case of application or machine failure. Flink guarantees this by periodically writing a consistent checkpoint of the application state to a remote and durable storage.
+
+In case of a failure, Flink recovers a stateful streaming application by restoring its state from a previous checkpoint and resetting the read position on the event log.
+
+The application will replay (and fast forward) the input events from the event log until it reaches the tail of the stream. This technique is used to recover from failures but can also be leveraged to update an application, fix bugs and repair previously emitted results, migrate an application to a different cluster, or perform A/B tests with different application versions. As previously stated, stateful stream processing is a versatile and flexible design architecture that can be used for many different use cases. In the following, we present three classes of applications that are commonly implemented using stateful stream processing: (1) event-driven applications, (2) data pipeline applications, and (3) data analytics applications. REAL-WORLD STREAMING USE-CASES AND DEPLOYMENTS If you are interested in learning more about real-world use cases and deployments, check out Apache Flink’s Powered By page and the talk recordings and slide decks of Flink Forward presentations. We describe
+
+The application will replay (and fast forward) the input events from the event log until it reaches the tail of the stream. This technique is used to recover from failures but can also be leveraged to update an application, fix bugs and repair previously emitted results, migrate an application to a different cluster, or perform A/B tests with different application versions.
+
+many different datastores, such as relational and special-purpose database systems, event logs, distributed filesystems, in-memory caches, and search indexes.
+
+It is common that companies store the same data in multiple different systems to improve the performance of data accesses.
+
+A traditional approach to synchronize data in different storage systems is periodic ETL jobs.
+
+However, they do not meet the latency requirements for many of today’s use cases.
+
+An alternative is to use an event log to distribute updates. The updates are written to and distributed by the event log. Consumers of the log incorporate the updates into the affected data stores.
+
+Instead of waiting to be periodically triggered, a streaming analytics application continuously ingests streams of events and updates its result by incorporating the latest events with low latency.
+
+This is similar to the maintenance techniques database systems use to update materialized views.
+
+whole Flink system in a single JVM process, which can be used to run and debug Flink jobs within an IDE. This feature comes in handy when developing and testing Flink applications.
+
+Operators without input ports are called data sources and operators without output ports are called data sinks.
+
+Dataflow programs are commonly represented as directed graphs, where nodes are called operators and represent computations and edges represent data dependencies.
+
+if we are using a distributed processing engine, each operator might have several parallel tasks running on different physical machines.
+
+While in the logical dataflow graph the nodes represent operators, in the physical dataflow, the nodes are tasks.
+
+you can partition your input data and have tasks of the same operation execute on the data subsets in parallel. This type of parallelism is called data parallelism. Data parallelism is useful because it allows for processing large volumes of data and spreading the computation load across several computing nodes.
+
+you can have tasks from different operators performing computations on the same or different data in parallel. This type of parallelism is called task parallelism. Using task parallelism, you can better utilize the computing resources of a cluster.
+
+Data exchange strategies define how data items are assigned to tasks in a physical dataflow graph.
+
+The forward strategy sends data from a task to a receiving task. If both tasks are located on the same physical machine (which is often ensured by task schedulers), this exchange strategy avoids network communication.
+
+The broadcast strategy sends every data item to all parallel tasks of an operator. Because this strategy replicates data and involves network communication, it is fairly expensive.
+
+The key-based strategy partitions data by a key attribute and guarantees that data items having the same key will be processed by the same task.
+
+The random strategy uniformly distributes data items to operator tasks in order to evenly distribute the load
+
+Latency indicates how long it takes for an event to be processed.
+
+Depending on the application, you might care about average latency, maximum latency, or percentile latency. For example, an average latency value of 10 ms means that events are processed within 10 ms on average. Alternately, a 95th-percentile latency value of 10 ms means that 95% of events are processed within 10 ms. Average values hide the true distribution of processing delays and might make it hard to detect problems.
+
+Modern stream processors, like Apache Flink, can offer latencies as low as a few milliseconds. In contrast, traditional batch processing latencies typically range from a few minutes to several hours.
+
+Throughput is a measure of the system’s processing capacity—its rate of processing. That is, throughput tells us how many events the system can process per time unit.
+
+the rate of processing depends on the rate of arrival; low throughput does not necessarily indicate bad performance.
+
+you are primarily concerned with determining the peak throughput—the
+
+system has reached its peak throughput and further increasing the event rate will only result in worse latency.
+
+If the system continues to receive data at a higher rate than it can handle, buffers might become unavailable and data might get lost.
+
+commonly known as backpressure and there are different strategies to deal with it.
+
+By processing several streams in parallel, you lower the latency while processing more events at the same time.
+
+Operations can be either stateless or stateful.
+
+Stateful stream processing applications are more challenging to parallelize and operate in a fault-tolerant manner because state needs to be efficiently partitioned and reliably recovered in the case of failures.
+
+some operations must collect and buffer records to compute their result. Consider, for example, a streaming join operation or a holistic aggregate, such as the median function.
+
+Window operations continuously create finite sets of events called buckets from an unbounded event stream and let us perform computations on these finite sets.
+
+Events are usually assigned to buckets based on data properties or based on time.
+
+Tumbling windows assign events into nonoverlapping buckets of fixed size. When the window border is passed, all the events are sent to an evaluation function for processing.
+
+Count-based tumbling windows define how many events are collected before triggering evaluation. 
+
+Time-based tumbling windows define a time interval during which events are buffered in the bucket. 
+
+Sliding  windows assign events into overlapping buckets of fixed size.
+
+We define sliding windows by providing their length and their slide.
+
+group together events that originate from the same period of user activity or session.
+
+Sessions are comprised of a series of events happening in adjacent times followed by a period of inactivity.
+
+Session windows group events in sessions based on a session gap value that defines the time of inactivity to consider a session
+
+in practice you might want to partition a stream into multiple logical streams and define parallel windows.
+
+Processing time is the time of the local clock on the machine where the operator processing the stream is being executed.
+
+Event time is the time when an event in the stream actually happened.
+
+(e.g., the event creation time).
+
+Event time completely decouples the processing speed from the results. Operations based on event time are predictable and their results are deterministic.
+
+Handling delayed events is only one of the challenges that you can overcome with event time. The ubiquitous problem of out-of-order data can also be solved with it.
+
+when combined with replayable streams, the determinism of timestamps gives you the ability to fast forward the past.
+
+how do we decide when to trigger an event-time window?
+
+how long do we have to wait before we can be certain that we have received all events that happened before a certain point of time?
+
+And how do we even know that data will be delayed?
+
+A watermark is a global progress metric that indicates the point in time when we are confident that no more delayed events will arrive.
+
+When an operator receives a watermark with time T, it can assume that no further events with timestamp less than T will be received.
+
+Watermarks provide a configurable tradeoff between results confidence and latency.
+
+Eager watermarks ensure low latency but provide lower confidence. In this case, late events might arrive after the watermark, and we should provide some code to handle them.
+
+On the other hand, if watermarks are too relaxed, you have high confidence but you might unnecessarily increase processing latency.
+
+In many real-world applications, the system does not have enough knowledge to perfectly determine watermarks.
+
+Hence, simply relying on watermarks might not always be a good idea. Instead, it is crucial that the stream processing system provide some mechanism to deal with events that might arrive after the watermark.
+
+Depending on the application requirements, you might want to ignore such events, log them, or use them to correct previous results.
+
+Processing-time windows introduce the lowest latency possible. Since
+
+for applications where speed is more important than accuracy, processing time comes in handy.
+
+Stateful operators use both incoming events and internal state to compute their output. Take,
+
+Since streaming operators process potentially unbounded data, caution should be taken to not allow internal state to grow indefinitely.
+
+Parallelization gets complicated, since results depend on both the state and incoming events. Fortunately, in many cases, you can partition the state by a key and manage the state of each partition independently.
+
+The system needs to efficiently manage the state and make sure it is protected from concurrent updates.
+
+Flink uses a lightweight snapshotting mechanism to achieve exactly-once result guarantees.
+
+“result guarantees” we mean the consistency of the internal state of the stream processor.
+
+At-most-once is the trivial case that guarantees processing of each event at most once. In other words, events can be simply dropped and nothing is done to ensure result correctness.
+
+at-least-once, and it means that all events will be processed, and there is a chance that some of them are processed more than once.
+
+Duplicate processing might be acceptable if application correctness only depends on the completeness of information. For example, determining whether a specific event occurs in the input stream
+
+Exactly-once means that not only will there be no event loss, but also updates on the internal state will be applied exactly once for each event. In
+
+End-to-end guarantees refer to result correctness across the whole data processing pipeline. Each component provides its own guarantees
+
+Flink is well integrated with cluster resource managers, such as Apache Mesos, YARN, and Kubernetes, but can also be configured to run as a stand-alone cluster.
+
+Common challenges that distributed systems need to address are allocation and management of compute resources in a cluster, process coordination, durable and highly available data storage, and failure recovery.
+
+Flink does not implement all this functionality by itself. Instead, it focuses on its core function—distributed data stream processing—and leverages existing cluster infrastructure and services.
+
+Flink does not provide durable, distributed storage. Instead, it takes advantage of distributed filesystems like HDFS or object stores such as S3.
+
+leader election in highly available setups, Flink depends on Apache ZooKeeper.
+
+A Flink setup consists of four different components that work together to execute streaming applications. These components are a JobManager, a ResourceManager, a TaskManager, and a Dispatcher.
+
+The JobManager is the master process that controls the execution of a single application—each application is controlled by a different JobManager.
+
+The application consists of a so-called JobGraph, a logical dataflow graph (see “Introduction to Dataflow Programming”), and a JAR file
+
+converts the JobGraph into a physical dataflow graph
+
+JobManager converts the JobGraph into a physical dataflow graph
+
+JobManager converts the JobGraph into a physical dataflow graph called the ExecutionGraph, which consists of tasks that can be executed in parallel.
+
+JobManager requests the necessary resources (TaskManager slots) to execute the tasks from the ResourceManager.
+
+it distributes the tasks of the ExecutionGraph to the TaskManagers
+
+Flink features multiple ResourceManagers for different environments and resource providers such as YARN, Mesos,
+
+ResourceManager is responsible for managing TaskManager slots, Flink’s unit of processing resources.
+
+ResourceManager instructs a TaskManager with idle slots to offer them to the JobManager.
+
+ResourceManager does not have enough slots to fulfill the JobManager’s request, the ResourceManager can talk to a resource provider to provision containers in which TaskManager processes are started.
+
+ResourceManager also takes care of terminating idle TaskManagers to free compute resources.
+
+TaskManagers are the worker processes of Flink.
+
+number of slots limits the number of tasks a TaskManager can execute.
+
+After it has been started, a TaskManager registers its slots to the ResourceManager.
+
+When instructed by the ResourceManager, the TaskManager offers one or more of its slots to a JobManager.
+
+During execution, a TaskManager exchanges data with other TaskManagers that run tasks of the same application.
+
+The Dispatcher runs across job executions and provides a REST interface to submit applications for execution.
+
+Once an application is submitted for execution, it starts a JobManager and hands the application over.
+
+The dispatcher also runs a web dashboard to provide information about job executions.
+
+a dispatcher might not be required.
+
+
+
+Framework style In this mode, Flink applications are packaged into a JAR file and submitted by a client to a running service.
+
+Library style In this mode, the Flink application is bundled in an application-specific container image, such as a Docker image.
+
+The image also includes the code to run a JobManager and ResourceManager.
+
+A second, job-independent image is used to deploy TaskManager containers. A
+
+Kubernetes takes care of starting the images and ensures that containers are restarted in case of a failure.
+
+Since the maximum operator parallelism is four, the application requires at least four available processing slots to be executed.
+
+Scheduling tasks as slices to slots has the advantage that many tasks are colocated on the TaskManager, which means they can efficiently exchange data within the the same process and without accessing the network.
+
+However, too many colocated tasks can also overload a TaskManager and result in bad performance.
+
+A TaskManager executes its tasks multithreaded in the same JVM
+
+Threads are more lightweight than separate processes and have lower communication costs but do not strictly isolate tasks from each other. Hence, a single misbehaving task can kill a whole TaskManager process and all tasks that run on it.
+
+By leveraging thread parallelism inside a TaskManager and deploying several TaskManager processes per host, Flink offers a lot of flexibility to trade off performance and resource isolation when deploying applications.
+
+To recover from failures, the system first needs to restart failed processes, and second, restart the application and recover its state.
+
+JobManager can not restart the application until enough slots become available.
+
+The application’s restart strategy determines how often the JobManager restarts the application and how long it waits between restart attempts.
+
+JobManager controls the execution of a streaming application and keeps metadata about its execution, such as pointers to completed checkpoints.
+
+streaming application cannot continue processing if the responsible JobManager process disappears.
+
+JobManager a single point of failure for applications in Flink.
+
+Flink supports a high-availability mode that migrates the responsibility and metadata for a job to another JobManager in case the original JobManager disappears.
+
+Flink’s high-availability mode is based on Apache ZooKeeper, a system for distributed services that require coordination and consensus.
+
+When operating in high-availability mode, the JobManager writes the JobGraph and all required metadata, such as the application’s JAR file, into a remote persistent storage system.
+
+In addition, the JobManager writes a pointer to the storage location into ZooKeeper’s datastore.
+
+checkpoint—when all tasks have successfully written their state into the remote storage—the JobManager writes the state handles to the remote storage and a pointer to this location to ZooKeeper.
+
+A new JobManager that takes over the work of the failed master
+
+It requests the storage locations from ZooKeeper to fetch the JobGraph, the JAR file, and the state handles of the last checkpoint
+
+It restarts the application and resets the state of all its tasks to the last completed checkpoint.
+
+When running on YARN or on Mesos, Flink’s remaining processes trigger the restart of JobManager or TaskManager processes.
+
+TaskManager collects records in buffers before they are shipped, i.e., records are not shipped one by one but batched into buffers. This technique is fundamental to effectively using the networking resource and achieving high throughput.
+
+Streaming applications need to exchange data in a pipelined fashion—each pair of TaskManagers maintains a permanent TCP connection to exchange data.
+
+Each TaskManager has a pool of network buffers (by default 32 KB in size)
+
+A TaskManager needs one dedicated network buffer for each receiving task that any of its tasks need to send data to.
+
+each of the four sender tasks needs at least four network buffers to send data to each of the receiver tasks and each receiver task requires at least four buffers to receive data.
+
+TaskManager must be able to provide enough buffers to serve all outgoing and incoming connections concurrently.
+
+the number of required buffers is quadratic to the number of tasks of the involved operators.
+
+Flink’s default configuration for network buffers is sufficient for small- to medium-sized setups. For larger setups, you need to tune the configuration
+
+Flink implements a credit-based flow control mechanism
+
+Flink features an optimization technique called task chaining that reduces the overhead of local communication under certain conditions. In order to satisfy the requirements for task chaining, two or more operators must be configured with the same parallelism and connected by local forward channels.
+
+it can make sense to break a long pipeline of chained tasks or break a chain into two tasks to schedule an expensive function to different slots.
+
+watermarks are implemented as special records holding a timestamp as a Long value. Watermarks flow in a stream of regular records with annotated timestamps as Figure 3-8 shows. Figure
+
+When a task receives a record that violates the watermark property and has smaller timestamps than a previously received watermark, it may be that the computation it belongs to has already been completed. Such records are called late records.
+
+Flink implements watermarks as special records that are received and emitted by operator tasks.
+
+Tasks have an internal time service that maintains timers and is activated when a watermark is received. Tasks can register timers at the timer service to perform a computation at a specific point in time in the future.
+
+Each partition is a stream of timestamped records and watermarks.
+
+tasks can receive records and watermarks from one or more input partitions and emit records and watermarks to one or more output partitions.
+
+A task maintains a partition watermark for each input partition. When it receives a watermark from a partition, it updates the respective partition watermark to be the maximum of the received value and the current value. Subsequently, the task updates its event-time clock to be the minimum of all partition watermarks.
+
+As soon as one partition does not advance its watermarks or becomes completely idle and does not ship any records or watermarks, the event-time clock of a task will not advance and the timers of the task will not trigger. This
+
+As soon as one partition does not advance its watermarks or becomes completely idle and does not ship any records or watermarks, the event-time clock of a task will not advance and the timers of the task will not trigger. This situation can be problematic for time-based operators that rely on an advancing clock to perform computations and clean up their state.
+
+The event-time clocks of a task with two input streams will correspond to the watermarks of the slower stream and usually the records or intermediate results of the faster stream are buffered in state until the event-time clock allows processing them.
+
+Timestamps and watermarks are usually assigned and generated when a stream is ingested by a streaming application.
+
+A Flink DataStream application can assign timestamps and generate watermarks to a stream in three ways:
+
+At the source: Timestamps and watermarks can be assigned and generated by a SourceFunction when a stream is ingested into an application.
+
+Periodic assigner: The DataStream API provides a user-defined function called AssignerWithPeriodicWatermarks that extracts a timestamp from each record and is periodically queried for the current watermark.
+
+Punctuated assigner: AssignerWithPunctuatedWatermarks is another user-defined function that extracts a timestamp from each record. It can be used to generate watermarks that are encoded in special input records. In
+
+Many operators continuously read and update some kind of state such as records collected in a window, reading positions of an input source, or custom, application-specific operator states like machine learning models.
+
+Flink treats all states—regardless of built-in or user-defined operators—the same.
+
+In general, all data maintained by a task and used to compute the results of a function belong to the state of the task. You can think of state as a local or instance variable that is accessed by a task’s business logic. 
+
+A task receives some input data. While processing the data, the task can read and update its state and compute its result based on its input data and state.
+
+All issues related to state consistency, failure handling, and efficient storage and access are taken care of by Flink so that developers can focus on the logic of their applications.
+
+In Flink, state is always associated with a specific operator.
+
+There are two types of state, operator state and keyed state, that are accessible from different scopes
+
+Operator state is scoped to an operator task. This means that all records processed by the same parallel task have access to the same state.
+
+Keyed state is maintained and accessed with respect to a key defined in the records of an operator’s input stream.
+
+Flink maintains one state instance per key value and partitions all records with the same key to the operator task that maintains the state for this key. When a task processes a record, it automatically scopes the state access to the key of the current record. Consequently, all records with the same key access the same state. Figure 3-12 shows how tasks interact with keyed state. 
+
+Flink maintains one state instance per key value and partitions all records with the same key to the operator task that maintains the state for this key.
+
+You can think of keyed state as a key-value map that is partitioned (or sharded) on the key across all parallel tasks of an operator.
+
+Because efficient state access is crucial to processing records with low latency, each parallel task locally maintains its state to ensure fast state accesses.
+
+How exactly the state is stored, accessed, and maintained is determined by a pluggable component that is called a state backend.
+
+A state backend is responsible for two things: local state management and checkpointing state to a remote location.
+
+Flink provides state backends that manage keyed state as objects stored in in-memory data structures on the JVM heap. Another state backend serializes state objects and puts them into RocksDB, which writes them to local hard disks.
+
+The remote storage for checkpointing could be a distributed filesystem or a database system.
+
+changing the parallelism of stateful operators is much more challenging because their state needs to be repartitioned and assigned to more or fewer parallel tasks.
+
+Flink supports four patterns for scaling different types of state.
+
+Operators with keyed state are scaled by repartitioning keys to fewer or more tasks.
+
+Flink organizes keys in so-called key groups. A key group is a partition of keys and Flink’s way of assigning keys to tasks. 
+
+Operators with operator list state are scaled by redistributing the list entries.
+
+Operators with operator union list state are scaled by broadcasting the full list of state entries to each task. The task can then choose which entries to use and which to discard. 
+
+Operators with operator broadcast state are scaled up by copying the state to new tasks.
+
+Flink’s recovery mechanism is based on consistent checkpoints of application state.
+
+consistent checkpoint of a stateful streaming application is a copy of the state of each of its tasks at a point when all tasks have processed exactly the same input. This
+
+During the execution of a streaming application, Flink periodically takes consistent checkpoints of the application’s state.
+
+In case of a failure, Flink uses the latest checkpoint to consistently restore the application’s state and restarts the processing. 
+
+An application is recovered in three steps: Restart the whole application. Reset the states of all stateful tasks to the latest checkpoint. Resume the processing of all tasks.
+
+all input streams are reset to the position up to which they were consumed
+
+all input streams are reset to the position up to which they were consumed when the checkpoint was taken.
+
+event logs like Apache Kafka can provide records from a previous offset of the stream. In contrast, a stream consumed from a socket cannot be reset because sockets discard data once it has been consumed.
+
+application can only be operated under exactly-once state consistency if all input streams are consumed by resettable data sources.
+
+Although this means Flink processes some messages twice (before and after the failure), the mechanism still achieves exactly-once state consistency because the state of all operators was reset to a point that had not seen this data yet.
+
+Depending on the sink operators of an application, some result records might be emitted multiple times to downstream systems, such as an event log, a filesystem, or a database, during the recovery.
+
+For some storage systems, Flink provides sink functions that feature exactly-once output, for example, by committing emitted records on checkpoint completion.
+
+Flink implements checkpointing based on the Chandy–Lamport algorithm
+
+Similar to watermarks, checkpoint barriers are injected by source operators into the regular stream of records
+
+A checkpoint barrier carries a checkpoint ID to identify the checkpoint it belongs to and logically splits a stream into two parts. All state modifications due to records that precede a barrier are included in the barrier’s checkpoint and all modifications due to records that follow the barrier are included in a later checkpoint.
+
+A checkpoint is initiated by the JobManager by sending a message with a new checkpoint ID to each data source task
+
+When a data source task receives the message, it pauses emitting records, triggers a checkpoint of its local state at the state backend, and broadcasts checkpoint barriers with the checkpoint
+
+When a data source task receives the message, it pauses emitting records, triggers a checkpoint of its local state at the state backend, and broadcasts checkpoint barriers with the checkpoint ID
+
+The state backend notifies the task once its state checkpoint is complete and the task acknowledges the checkpoint at the JobManager.
+
+After all barriers are sent out, the source continues its regular operations.
+
+source function defines the stream position on which the checkpoint is taken. 
+
+Similar to watermarks, checkpoint barriers are broadcasted to all connected parallel tasks
+
+When a task receives a barrier for a new checkpoint, it waits for the arrival of barriers from all its input partitions for the checkpoint. While it is waiting, it continues processing records from stream partitions that did not provide a barrier yet. Records that arrive on partitions that forwarded a barrier already cannot be processed and are buffered. The process of waiting for all barriers to arrive is called barrier alignment,
+
+As soon as a task has received barriers from all its input partitions, it initiates a checkpoint at the state backend and broadcasts the checkpoint barrier to all of its downstream connected tasks as shown in Figure 3-23. Figure 3-23. Tasks checkpoint their state once all barriers have been received, then they forward the checkpoint barrier Once all checkpoint barriers have been emitted, the task starts to process the buffered records.
+
+As soon as a task has received barriers from all its input partitions, it initiates a checkpoint at the state backend and broadcasts the checkpoint barrier to all of its downstream connected tasks as
+
+Once all checkpoint barriers have been emitted, the task starts to process the buffered records.
+
+When a sink task receives a barrier, it performs a barrier alignment, checkpoints its own state, and acknowledges the reception of the barrier to the JobManager.
+
+The JobManager records the checkpoint of an application as completed once it has received a checkpoint acknowledgement from all tasks
+
+Flink’s design it is the responsibility of the state backend to perform a checkpoint. How exactly the state of a task is copied depends on the implementation of the state backend. For example, the FileSystem state backend and the RocksDB state backend support asynchronous checkpoints. When a checkpoint is triggered, the state backend creates a local copy of the state. When the local copy is finished, the task continues its regular processing. A background thread asynchronously copies the local snapshot to the remote storage and notifies the task once it completes the checkpoint.
+
+the RocksDB state backend also features incremental checkpointing, which reduces the amount of data to transfer.
+
+to tweak the barrier alignment step. For applications that require very low latency and can tolerate at-least-once state guarantees, Flink can be configured to process all arriving records during buffer alignment instead of buffering those for which the barrier has already arrived.
+
+Checkpoints are periodically taken and automatically discarded according to a configurable policy.
+
+they are deleted when an application is explicitly canceled.
+
+savepoints are created using the same algorithm as checkpoints and hence are basically checkpoints with some additional metadata. Flink does not automatically take a savepoint, so a user (or external scheduler) has to explicitly trigger its creation. Flink also does not automatically clean up savepoints. Chapter 10 describes how to trigger and dispose savepoints. Using savepoints Given an application and a compatible savepoint, you can start the application from the savepoint. This will initialize the state of the application to the state of the savepoint and run the application from the point at which the savepoint was taken. While this behavior seems to be exactly the same as recovering an application from a failure using a checkpoint, failure recovery is actually just a special case. It starts the same application with the same configuration on the same cluster. Starting an application from a savepoint allows you to do much more. You
+
+savepoints are created using the same algorithm as checkpoints and hence are basically checkpoints with some additional metadata.
+
+Flink does not automatically take a savepoint, so a user (or external scheduler) has to explicitly trigger its creation.
+
+Flink also does not automatically clean up savepoints.
+
+You can start a different but compatible application from a savepoint. Hence, you can fix bugs in your application logic and reprocess as many events as your streaming source can provide
+
+run A/B tests or what-if scenarios with different business logic.
+
+You can start the same application with a different parallelism and scale the application out or in.
+
+You can start the same application on a different cluster.
+
+You can use a savepoint to pause an application and resume it later.
+
+The state copies in the savepoint are organized by an operator identifier and a state name.
+
+If a modified application is started from a savepoint, a state in the savepoint can only be mapped to the application if it contains an operator with a corresponding identifier and state name.
+
+By default, Flink assigns unique operator identifiers. However, the identifier of an operator is deterministically generated based on the identifiers of its preceding operators.
+
+Hence, the identifier of an operator changes when one of its predecessors changes, for example, when an operator is added or removed.
+
+As a consequence, an application with default operator identifiers is very limited in how it can be evolved without losing state.
+
+Therefore, we strongly recommend manually assigning unique identifiers to operators and not relying on Flink’s default assignment.
+
+There are also applications that do not emit results but keep them internally to serve them via Flink’s queryable state feature.
+
+the API calls construct an execution plan in the execution environment, which consists of the stream sources created from the environment and all transformations that were transitively applied to these sources. Only when execute() is called does the system trigger the execution of the program.
+
+The constructed plan is translated into a JobGraph and submitted to a JobManager for execution.
+
+If the JobManager runs remotely, the JobGraph must be shipped together with a JAR file that contains all classes and required dependencies of the application.
+
+Most function interfaces are designed as SAM (single abstract method) interfaces and they can be implemented as Java 8 lambda functions.
+
+DataStream API in four categories: Basic transformations are transformations on individual events. KeyedStream transformations are transformations that are applied to events in the context of a key. Multistream transformations merge multiple streams into one stream or split one stream into multiple streams. Distribution transformations reorganize stream events.
+
+common requirement of many applications is to process groups of events that share a certain property together. The DataStream API features the abstraction of a KeyedStream, which is a DataStream that has been logically partitioned into disjoint substreams of events that share the same key.
+
+all events with the same key access the same state and thus can be processed together.
+
+use a keyBy transformation to convert a DataStream into a KeyedStream
+
+Rolling aggregation transformations are applied on a KeyedStream and produce a DataStream of aggregates, such as sum, minimum, and maximum.
+
+For each incoming event, the operator updates the corresponding aggregate value and emits an event with the updated value.
+
+ONLY USE ROLLING AGGREGATIONS ON BOUNDED KEY DOMAINS
+
+The rolling aggregate operator keeps a state for every key that is processed. Since this state is never cleaned up, you should only apply a rolling aggregations operator on a stream with a bounded key domain.
+
+A reduce transformation does not change the type of the stream. The type of the output stream is the same as the type of the input stream.
+
+Many applications ingest multiple streams that need to be jointly processed or split a stream in order to apply different logic to different substreams.
+
+Moreover, the union operator does not perform duplication elimination. Every input event is emitted to the next operator.
+
+Combining events of two streams is a very common requirement in stream processing.
+
+DataStream.connect() method receives a DataStream and returns a ConnectedStreams object, which represents the two connected streams:
+
+Joint processing of two streams usually requires that events of both streams are deterministically routed based on some condition to be processed by the same parallel instance of an operator.
+
+By default, connect() does not establish a relationship between the events of both streams so events of both streams are randomly assigned to operator instances.
+
+In order to achieve deterministic transformations on ConnectedStreams, connect() can be combined with keyBy() or broadcast().
+
+Regardless of whether you keyBy() ConnectedStreams or you connect() two KeyedStreams, the connect() transformation will route all events from both streams with the same key to the same operator instance.
+
+All events of the broadcasted stream are replicated and sent to all parallel operator instances of the subsequent processing function.
+
+The events of the nonbroadcasted stream are simply forwarded. Hence, the elements of both input streams can be jointly processed.
+
+It also supports connecting a keyed and a broadcasted stream and storing the broadcasted events in managed state. This allows you to implement operators that are dynamically configured via a data stream (e.g., to add or remove filtering rules or update machine-learning models).
+
+Split is the inverse transformation to the union transformation. It divides an input stream into two or more output streams of the same type as the input stream. Each incoming event can be routed to zero, one, or more output streams.
+
+The DataStream.split() method returns a SplitStream, which provides a select() method to select one or more streams from the SplitStream by specifying the output names.
+
+the side-output feature of the process functions, which can emit multiple streams of different types from a function. Distribution
+
+the side-output feature of the process functions, which can emit multiple streams of different types from a function.
+
+present DataStream methods that enable users to control partitioning strategies or define their own.
+
+DataStream.shuffle() method. The method distributes records randomly according to a uniform distribution to the parallel tasks of the following operator.
+
+The rebalance() method partitions the input stream so that events are evenly distributed to successor tasks in a round-robin fashion.
+
+The rescale() method also distributes events in a round-robin fashion, but only to a subset of successor tasks.
+
+The broadcast() method replicates the input data stream so that all events are sent to all parallel tasks of the downstream operator.
+
+The global() method sends all events of the input data stream to the first parallel task of the downstream operator.
+
+When none of the predefined partitioning strategies is suitable, you can define your own by using the partitionCustom() method. This method receives a Partitioner object
+
+Each operator is parallelized into one or multiple tasks.
+
+Each task will process a subset of the operator’s input stream.
+
+The parallelism of an operator can be controlled at the level of the execution environment or per individual operator.
+
+By default, the parallelism of all operators of an application is set as the parallelism of the application’s execution environment.
+
+If the application runs in a local execution environment the parallelism is set to match the number of CPU cores.
+
+When submitting an application to a running Flink cluster, the environment parallelism is set to the default parallelism of the cluster unless it is explicitly specified via the submission client
+
+In general, it is a good idea to define the parallelism of your operators relative to the default parallelism of the environment.
+
+The default parallelism of an operator can be overridden by specifying it explicitly.
+
+You can also override the default parallelism of the environment, but you will no longer be able to control the parallelism of your application via the submission client:
+
+Flink requires detailed knowledge of the types of data the application processes.
+
+Flink uses the concept of type information to represent data types and generate specific serializers, deserializers, and comparators for every data type.
+
+The most widely used types can be grouped into the following categories: Primitives Java and Scala tuples Scala case classes POJOs, including classes generated by Apache Avro Some special types Types that are not specially handled are treated as generic types and serialized using the Kryo serialization framework.
+
+The central class in Flink’s type system is TypeInformation. It provides the system with the necessary information it needs to generate serialiazers and comparators.
+
+Composite keys consisting of more than one tuple field
+
+Another way to define keys and select fields is by using String-based field expressions. Field expressions work for tuples, POJOs, and case classes. They also support the selection of nested fields. In the introductory example of this chapter, we defined the following case class: case class SensorReading(   id: String,   timestamp: Long,   temperature: Double) To key the stream by sensor ID we can pass the field name id
+
+Nested fields in POJOs and tuples are selected by denoting the nesting level with a "."
+
+A full data type can be selected using the wildcard field expression "_"
+
+When a program is submitted for execution, all function objects are serialized using Java serialization and shipped to all parallel tasks of their corresponding operators.
+
+Flink serializes all function objects with Java serialization to ship them to the worker processes. Everything contained in a user function must be Serializable.
+
+If your function requires a nonserializable object instance, you can either implement it as a rich function and initialize the nonserializable field in the open() method or override the Java serialization and deserialization methods.
+
+Oftentimes there is a need to initialize a function before it processes the first record or to retrieve information about the context in which it is executed. The DataStream API provides rich functions that expose more functionality than the regular functions
+
+name—RichMapFunction, RichFlatMapFunction, and so on.
+
+open() method is an initialization method for the rich function. It is called once per task before a transformation method
+
+close() method is a finalization method for the function and it is called once per task after the last call of the transformation method. Thus, it is commonly used for cleanup and releasing resources.
+
+getRuntimeContext() provides access to the function’s RuntimeContext. The RuntimeContext can be used to retrieve information such as the function’s parallelism, its subtask index, and the name of the task that executes the function.
+
+The time characteristic is a property of the StreamExecutionEnvironment
+
+ProcessingTime specifies that operators determine the current time of the data stream according to the system clock of the machine where they are being executed.
+
+EventTime specifies that operators determine the current time by using information from the data itself. Each event carries a timestamp and the logical time of the system is defined by watermarks.
+
+IngestionTime specifies the processing time of the source operator as an event time timestamp to each ingested record and automatically generates watermarks. It is a hybrid of EventTime and ProcessingTime. The ingestion time of an event is the time it entered the stream
+
+The DataStream API provides the TimestampAssigner interface to extract timestamps from elements after they have been ingested into the streaming application.
+
+In the example above, MyAssigner can either be of type AssignerWithPeriodicWatermarks or AssignerWithPunctuatedWatermarks. These two
+
+In the example above, MyAssigner can either be of type AssignerWithPeriodicWatermarks or AssignerWithPunctuatedWatermarks. These two interfaces extend the TimestampAssigner interface provided by the DataStream API.
+
+The first interface defines assigners that emit watermarks periodically while the second injects watermarks based on a property of the input events.
+
+Assigning watermarks periodically means that we instruct the system to emit watermarks and advance the event time in fixed intervals of machine time.
+
+The default interval is set to two hundred milliseconds, but it can be configured using the ExecutionConfig.setAutoWatermarkInterval()
+
+instruct the program to emit watermarks
+
+instruct the program to emit watermarks every 5 seconds. Actually, every 5 seconds, Flink invokes the getCurrentWatermark() method of AssignerWithPeriodicWatermarks.
+
+Example 6-3 shows an assigner with periodic timestamps that produces watermarks by keeping track of the maximum element timestamp it has seen so far. When asked for a new watermark, the assigner returns a watermark with the maximum timestamp minus a 1-minute tolerance
+
+The DataStream API provides implementations for two common cases of timestamp assigners with periodic watermarks.
+
+If your input elements have timestamps that are monotonically increasing, you can use the shortcut method assignAscendingTimeStamps.
+
+Flink provides the BoundedOutOfOrdernessTimeStampExtractor, which takes the maximum expected lateness as an argument:
+
+Sometimes the input stream contains special tuples or markers that indicate the stream’s progress. Flink provides the AssignerWithPunctuatedWatermarks interface for such cases, or when watermarks can be defined based on some other property of the input elements. It defines the checkAndGetNextWatermark()
+
+Example 6-4 shows a punctuated watermark assigner that emits a watermark for every reading it receives from the sensor with the ID "sensor_1".
+
+An operator based on event time uses watermarks to determine the completeness of its ingested records and the progress of its operation. Based on the received watermarks, the operator computes a point in time up to which it expects to have received relevant input records.
+
+With this in mind, you can use watermarks to balance result latency and result completeness.
+
+The DataStream API provides a family of low-level transformations, the process functions, which can also access record timestamps and watermarks and register timers that trigger at a specific time in the future. Moreover, process functions feature side outputs to emit records to multiple output streams. Process functions are commonly used to build event-driven applications and to implement custom logic for which predefined windows and transformations might not be suitable.
+
+All process functions implement the RichFunction interface and hence offer  open(), close(), and getRuntimeContext() methods.
+
+The Context object is what makes a process function special. It gives access to the timestamp and the key of the current record and to a TimerService.
+
+Side outputs are a feature of process functions to emit multiple streams from a function with possibly different types.
+
+Process functions can emit a record to one or more side outputs via the Context object.
+
+monitoredReadings   .getSideOutput(new OutputTag[String]("freezing-alarms"))   .print()
+
+ctx.timerService().registerProcessingTimeTimer(timerTimestamp)
+
+A window function that is applied on a WindowedStream (or AllWindowedStream) and processes the elements that are assigned to a window.
+
+A window assigner that determines how the elements of the input stream are grouped into windows. A window assigner produces a WindowedStream (or AllWindowedStream if applied on a nonkeyed DataStream). A window function that is applied on a WindowedStream (or AllWindowedStream) and processes the elements that are assigned to a window.
+
+It is important to note that a window is created when the first element is assigned to it. Flink will never evaluate empty windows.
+
+In addition to time-based windows, Flink also supports count-based windows—windows that group a fixed number of elements
+
+A tumbling window assigner places elements into nonoverlapping, fixed-size windows,
+
+assigners—TumblingEventTimeWindows and TumblingProcessingTimeWindows—for tumbling event-time and processing-time windows, respectively.
+
+we defined an event-time tumbling window using the timeWindow(size) method, which is a shortcut for either window.(TumblingEventTimeWindows.of(size)) or for window.(TumblingProcessingTimeWindows.of(size)) depending on the configured time characteristic.
+
+By default, tumbling windows are aligned to the epoch time, 1970-01-01-00:00:00.000. For example, an assigner with a size of one hour will define windows at 00:00:00, 01:00:00, 02:00:00, and so on. Alternatively, you can specify an offset as a second parameter in the assigner. The following code shows windows with an offset of 15 minutes that start at 00:15:00, 01:15:00, 02:15:00, and so on:
+
+The sliding window assigner assigns elements to fixed-sized windows that are shifted by a specified slide interval,
+
+A session window assigner places elements into nonoverlapping windows of activity of varying size. The boundaries of session windows are defined by gaps of inactivity, time intervals in which no record is received. 
+
+SessionWindows assigner initially maps each incoming element into its own window with the element’s timestamp as the start time and the session gap as the window size. Subsequently, it merges all windows with overlapping ranges.
+
+There are two types of functions that can be applied on a window:
+
+Incremental aggregation functions are directly applied when an element is added to a window and hold and update a single value as window state. These functions are typically very space-efficient
+
+ReduceFunction and AggregateFunction
+
+Full window functions collect all elements of a window and iterate over the list of all collected elements when they are evaluated. Full window functions usually require more space but allow for more complex logic
+
+The ProcessWindowFunction is a full window function.
+
+In the DataStream API this is done by providing a ProcessWindowFunction as a second parameter to the reduce() or aggregate() methods
+
+The DataStream API exposes interfaces and methods to define custom window operators by allowing you to implement your own assigners, triggers, and evictors.
+
+When an element arrives at a window operator, it is handed to the WindowAssigner.
+
+If the window operator is configured with an incremental aggregation function, such as a ReduceFunction or AggregateFunction, the newly added element is immediately aggregated and the result is stored as the contents of the window.
+
+If the window operator does not have an incremental aggregation function, the new element is appended to a ListState
+
+stream   .keyBy(...)   .window(...)                   // specify the window assigner [.trigger(...)]                 // optional: specify the trigger [.evictor(...)]                 // optional: specify the evictor   .reduce/aggregate/process(...) // specify
+
+Flink’s DataStream API features two built-in operators to join streams with a temporal condition: the interval join and the window join. In this section, we describe both operators. If you cannot express your required join semantics using Flink’s built-in join operators, you can implement custom join logic as a CoProcessFunction, BroadcastProcessFunction, or KeyedBroadcastProcessFunction.
+
+The interval join joins events from two streams that have a common key and that have timestamps not more than specified intervals
+
+The join interval is symmetric, i.e., an event from B joins with all events from A that are no
+
+The interval join currently only supports event time and operates with INNER JOIN semantics (events that have no matching event will not be forwarded).
+
+The lower and upper bounds can be arbitrarily chosen as long as the lower bound is smaller than the upper bound;
+
+input1  .keyBy(…)  .between(<lower-bound>, <upper-bound>) // bounds with respect to input1  .process(ProcessJoinFunction)
+
+An interval join needs to buffer records from one or both inputs. For the first input, all records with timestamps larger than the current watermark—the upper bound—are buffered. For the second input, all records with timestamps larger than the current watermark + the lower bound are buffered.
+
+As the name suggests, the window join is based on Flink’s windowing mechanism. Elements of both input streams are assigned to common windows and joined (or cogrouped) when a window is complete.
+
+For example, you can implement triggering logic to fire when the window receives a certain number of elements, when an element with a specific value is added to the window, or after detecting a pattern on added elements like “two events of the same type within 5 seconds.”
+
+A custom trigger can also be used to compute and emit early results from an event-time window, before the watermark reaches the window’s end timestamp.
+
+Triggers define when a window is evaluated and its results are emitted.
+
+When the timer of a window fires, the JoinFunction is called for each combination of elements from the first and the second input—the cross-product.
+
+Both input streams are keyed on their key attributes and the common window assigner maps events of both streams to common windows,
+
+In addition to joining two streams, it is also possible to cogroup two streams on a window by starting the operator definition with coGroup() instead of join(). The overall logic is the same, but instead of calling a JoinFunction for every pair of events from both inputs, a CoGroupFunction is called once per window with iterators over the elements from both inputs.
+
+Late events can be simply dropped. Late events can be redirected into a separate stream. Computation results can be updated based on late events and updates have to be emitted.
+
+  .sideOutputLateData(new
+
+DataStream[SensorReading] = countPer10Secs   .getSideOutput(new OutputTag[SensorReading]("late-readings")) A process function can identify late events by comparing event timestamps with the current watermark and emitting them using the regular side-output API.
+
+two types of state, keyed state and operator state.
+
+For each distinct value of the key attribute, Flink maintains one state instance.
+
+The keyed state instances of a function are distributed across all parallel tasks of the function’s operator.
+
+The following state primitives are supported by Flink:
+
+A state primitive defines the structure of the state for an individual key.
+
+ValueState[T]
+
+ListState[T]
+
+MapState[K,
+
+ReducingState[T]
+
+AggregatingState[I, O]
+
+Once you change operator identifiers or the maximum parallelism, you cannot start an application from a savepoint but have to start it from scratch without any state initialization.
+
+Savepoint state can only be restored to an operator of a started application if their identifiers are identical.
+
+If your application requires keyed state for a moving key domain, it should ensure the state of keys is cleared when it is not needed anymore.
+
+In such a case, a function with keyed state would accumulate state for more and more keys. As the key space evolves, the state of expired keys becomes stale and useless.
+
+Currently, Flink offers three state backends, the MemoryStateBackend, the FsStateBackend, and the RocksDBStateBackend:
+
+Apache Flink features queryable state to address use cases that usually would require an external datastore to share data.
+
+In Flink, any keyed state can be exposed to external applications as queryable state and act as a read-only key-value store.
+
+In order to ease the implementation of transactional sinks, Flink’s DataStream API provides two templates that can be extended to implement custom sink operators. Both templates implement the CheckpointListener interface to receive notifications from the JobManager about completed checkpoints
+
+The GenericWriteAheadSink template collects all outgoing records per checkpoint and stores them in the operator state of the sink task. The
+
+When a task receives a checkpoint completion notification, it writes the records of the completed checkpoints to the external system.
+
+The TwoPhaseCommitSinkFunction template leverages transactional features of the external sink system. For every checkpoint, it starts a new transaction and writes all following records to the sink system in the context of the current transaction. The sink commits a transaction when it receives the completion notification
+
+Apache Flink provides the AsyncFunction to mitigate the latency of remote I/O calls.
+
+AsyncFunction concurrently sends multiple queries and processes their results asynchronously.
+
+A standalone Flink cluster consists of at least one master process and at least one TaskManager process that run on one or more machines.
+
+we introduced the different components of a Flink setup: the JobManager, TaskManager, ResourceManager, and Dispatcher.
+
+A client submits a job to the Dispatcher, which internally starts a JobManager thread and provides the JobGraph for execution. The JobManager requests the necessary processing slots from the ResourceManager and deploys the job for execution once the requested slots have been received.
+
+local Flink cluster is started by calling  ./bin/start-cluster.sh. You can visit Flink’s Web UI at http://localhost:8081 and check the number of connected TaskManagers and available slots.
+
+The hostnames (or IP addresses) of all machines that should run TaskManagers need to be listed in the ./conf/slaves file.
+
+The hostname (or IP address) of the machine that runs the master process needs to be configured in the ./conf/flink-conf.yaml file with the config key jobmanager.rpc.address.
+
+The Flink distribution folder must be located on all machines at the same path. A common approach is to mount a network-shared directory with the Flink distribution on each machine.
+
+Master and worker containers are started from the same Docker image with different parameters as shown in Example 9-1.
+
+Flink can run on YARN in two modes: the job mode and the session mode. In job mode, a Flink cluster is started to run a single job. Once the job terminates, the Flink cluster is stopped and all resources are returned. 
+
+The session mode starts a long-running Flink cluster that can run multiple jobs and needs to be manually stopped.
+
+YARN grants resources as containers3 that are distributed in the cluster and in which applications run their processes.
+
+If not enough slots are available, Flink’s ResourceManager requests additional containers from the YARN ResourceManager to start TaskManager processes, which register themselves at the Flink ResourceManager.
+
+A Flink HA setup requires a running Apache ZooKeeper cluster and a persistent remote storage, such as HDFS, NFS, or S3.
+
+Flink does not guarantee or grant heap memory per task or slot. Configurations with a single slot per TaskManager have better resource isolation and can prevent a misbehaving application from interfering with unrelated applications.
+
+Apache Flink supports Kerberos authentication and can be configured to encrypt all network communication with SSL.
+
+Note that the credentials are tied to a Flink cluster and not to a running job; all applications that run on the same cluster use the same authentication token. If you need to work with different credentials, you should start a new cluster.
+
+However, the recommended approach is setting up and configuring a dedicated proxy service that controls access to the REST endpoint.
+
+You need to take a savepoint, cancel the application, and restart it with an adjusted parallelism from the savepoint.
+
+If you require exactly-once results, you should take the savepoint and stop the application with the integrated savepoint-and-cancel command.
+
+In library mode, the application is bundled into a Docker image that also includes the required Flink binaries. The image can be started in two ways—as a JobMaster container or a TaskManager container. When the image is deployed as a JobMaster, the container starts a Flink master process that immediately picks up the bundled application to start it. A TaskManager container registers itself at the JobMaster and offers its processing slots. As soon as enough slots become available, the JobMaster container deploys the application for execution. The library style of running Flink applications resembles the deployment of microservices in a containerized environment. When being deployed on a container orchestration framework, such as Kubernetes, the framework restarts failed containers. In
+
+In library mode, the application is bundled into a Docker image that also includes the required Flink binaries. The image can be started in two ways—as a JobMaster container or a TaskManager container.
+
+Apache Flink provides a script to build job-specific Flink Docker images. The script is included in the source distribution and Flink’s Git repository. It is not part of Flink’s binary distributions.
+
+Task chaining fuses the parallel tasks of two or more operators into a single task that is executed by a single thread.
+
+The fused tasks exchange records by method calls and thus with basically no communication costs. Since task chaining improves the performance of most applications, it is enabled by default in Flink.
+
+To disable chaining for a specific operator, you can call its disableChaining() method.
+
+It is also possible to start a new chain with an operator by calling its startNewChain() method
+
+Flink’s mechanism to manually control the assignment of tasks to slots is slot-sharing groups. Each operator is a member of a slot-sharing group. All tasks of operators that are members of the same slot-sharing group are processed by the same slots. Within a slot-sharing group, the tasks are assigned to slots as described in “Task Execution”—each slot processes up to one task of each operator that is a member. Hence, a slot-sharing group requires as many processing slots as the maximum parallelism of its operators. Tasks of operators that are in different slot-sharing groups are not executed by the same slots. By default, each operator is in the "default" slot-sharing group.
+
+Flink’s mechanism to manually control the assignment of tasks to slots is slot-sharing groups. Each operator is a member of a slot-sharing group. All tasks of operators that are members of the same slot-sharing group are processed by the same slots.
+
+Flink provides a couple of parameters to tune checkpointing and state backends. Configuring these options is important to ensure reliable and smooth operation of streaming applications in production.
+
+Checkpoints are enabled on the StreamExecutionEnvironment:
+
+If—according to the configured checkpointing interval—a checkpoint needs to be started, but there is another checkpoint in progress, the second checkpoint will be put on hold until the first checkpoint completes.
+
+If you configure the minimum pause to be 30 seconds, then no new checkpoint will be started within the first 30 seconds after a checkpoint completed. This also means the effective checkpointing interval is at least 30 seconds
+
+you can configure the maximum number of concurrent checkpoints.
+
+To avoid long-running checkpoints, you can configure a timeout interval after which a checkpoint is canceled. By default, checkpoints are canceled after 10 minutes.
+
+you might also want to configure what happens if a checkpoint fails. By default, a failing checkpoint causes an exception that results in an application restart. You can disable this behavior
+
+Flink supports compressed checkpoints and savepoints. Until Flink 1.7, the only
+
+The default state backend of an application is MemoryStateBackend.
+
+RocksDB is optimized for SSD storage and does not provide great performance if state is stored on spinning disks.
+
+Consequently, an application needs enough spare resources for the catch-up phase after the application was restarted to successfully resume its regular processing. This means an application should not run close to 100% resource consumption during
+
+Consequently, an application needs enough spare resources for the catch-up phase after the application was restarted to successfully resume its regular processing. This means an application should not run close to 100% resource consumption during regular processing.
+
+Flink features three restart strategies to address this problem:
+
+The default restart strategy used if no restart strategy is explicitly defined is a fixed-delay restart strategy with Integer.MAX_VALUE restart attempts and a 10-second delay.
+
+Flink supports a feature called local recovery to significantly speed up recovery if the application can be restarted on the same machines. When enabled, state backends also store a copy of the checkpoint data on the local disk of their worker node in addition to writing the data to the remote storage system.
+
+Since the checkpoint data is written twice, local recovery adds overhead to checkpointing.
+
+Local recovery only affects keyed state, which is always partitioned and usually accounts for most of the state size.
+
+Flink collects several system and application metrics by default. Metrics are gathered per operator, TaskManager, or JobManager.
+
+You can configure which context information the metric should contain by setting the corresponding metric options
+
+You can expose metrics to external backends through reporters and Flink provides implementation for several of them
+
+with rich semantics such as Flink. In
+
+it approximates latency by periodically emitting a special record at the sources and allowing users to track how long it takes for this record to arrive at the sinks. This special record is called a latency marker, and it bears a timestamp indicating when it was emitted.
+
+an automatic clock synchronization service such as NTP,
+
+By default, Flink uses the SLF4J logging abstraction together with the log4j logging framework.
+
+To change the properties of log4j loggers, modify the log4j.properties file in the conf/ folder.
+
+Further, Flink offers domain-specific libraries and APIs for relational queries, complex event processing (CEP), and graph processing.
+
+The Table API is a language-integrated query (LINQ) API for Scala and Java. Queries can be executed for batch or streaming analysis without modification.
+
+Flink SQL follows the ANSI SQL standard and leverages Apache Calcite for query parsing and optimization.
+
+FlinkCEP is a high-level API and library for complex event pattern detection.
+
+Gelly is Flink’s graph processing API and library. It builds on top of the DataSet API
+
