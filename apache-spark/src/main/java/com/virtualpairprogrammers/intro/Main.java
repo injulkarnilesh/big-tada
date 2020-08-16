@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import scala.Tuple2;
 
 public class Main {
 
@@ -23,6 +24,19 @@ public class Main {
 
     JavaSparkContext sc = new JavaSparkContext(conf);
     JavaRDD<Double> rdd = sc.parallelize(numbers);
+
+    Double sum = rdd.reduce((n1, n2) -> n1 + n2);
+    System.out.println("Sum by reduce:" + sum);
+
+    JavaRDD<Double> sqrtRdd = rdd.map(Math::sqrt);
+    sqrtRdd.collect().forEach(System.out::println);
+    //collect into list then iterate
+
+    JavaRDD<Tuple2<Double, Double>> tupleRdd = rdd.map(d -> new Tuple2<>(d, Math.sqrt(d)));
+    tupleRdd.foreach(t -> System.out.println("Tuple<" + t._1 + "," +  t._2 + ">"));
+    //foreach argument function is sent to all nodes of cluster
+    //for that function should be Serializable
+    //works fine locally, might not work on cluster
 
     sc.close();
   }
