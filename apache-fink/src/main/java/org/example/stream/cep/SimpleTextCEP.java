@@ -18,6 +18,9 @@ import org.example.stream.tweet.LanguageConfig;
 
 public class SimpleTextCEP {
 
+  /*
+  $nc -l localhost 9876
+   */
   public static void main(String[] args) throws Exception {
     StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
     DataStream<String> controlStream = environment.socketTextStream("localhost", 9876);
