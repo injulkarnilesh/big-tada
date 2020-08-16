@@ -27,10 +27,14 @@ import org.apache.flink.util.Collector;
 public class MoviesFilter {
 
   //--input C:\personal-workspace\apache-fink\src\main\resources\ml-latest-small\movies.csv --output C:\personal-workspace\apache-fink\src\main\resources\ml-latest-small\drama-movies
-  public static final String OUT_PUT_PATH = "C:\\personal-workspace\\apache-fink\\src\\main\\resources\\ml-latest-small\\drama-movies";
-  public static final String RATINGS_FILE = "C:\\personal-workspace\\apache-fink\\src\\main\\resources\\ml-latest-small\\ratings.csv";
-  public static final String MOVIES_FILE = "C:\\personal-workspace\\apache-fink\\src\\main\\resources\\ml-latest-small\\movies.csv";
+  public static final String OUT_PUT_PATH = "C:\\personal-workspace\\big-tada\\apache-fink\\src\\main\\resources\\ml-latest-small\\drama-movies";
+  public static final String RATINGS_FILE = "C:\\personal-workspace\\big-tada\\apache-fink\\src\\main\\resources\\ml-latest-small\\ratings.csv";
+  public static final String MOVIES_FILE = "C:\\personal-workspace\\big-tada\\apache-fink\\src\\main\\resources\\ml-latest-small\\movies.csv";
 
+  /*
+  Sample args
+  --input C:\personal-workspace\big-tada\apache-fink\src\main\resources\ml-latest-small\movies.csv --output C:\personal-workspace\big-tada\apache-fink\src\main\resources\ml-latest-small\output.txt
+   */
   public static void main(String[] args) throws Exception {
     ParameterTool parameterTool = ParameterTool.fromArgs(args);
     String moviesFile = parameterTool.get("input");
