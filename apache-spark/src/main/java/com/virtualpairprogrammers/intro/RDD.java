@@ -9,7 +9,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import scala.Tuple2;
 
-public class Main {
+public class RDD {
 
   public static void main(String[] args) {
     List<Double> numbers = Lists.newArrayList(
