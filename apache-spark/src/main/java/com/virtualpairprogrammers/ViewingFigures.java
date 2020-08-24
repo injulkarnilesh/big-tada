@@ -42,9 +42,9 @@ public class ViewingFigures {
 				.mapToPair(chapterCourse -> new Tuple2<>(chapterCourse._2, 1))
 				.reduceByKey((count, anotherCount) -> count + anotherCount);
 
-		courseTotalChapters.foreach(courseTotalChapter -> System.out.println(String.format("Course[%d] has total %d chapters", courseTotalChapter._1, courseTotalChapter._2)));
+		//courseTotalChapters.foreach(courseTotalChapter -> System.out.println(String.format("Course[%d] has total %d chapters", courseTotalChapter._1, courseTotalChapter._2)));
 
-		JavaPairRDD<Integer, Tuple2<Integer, Integer>> courseUserViewedCount = viewData
+		JavaPairRDD<Integer, Integer> courseViewedCount = viewData
 				.distinct()
 				.mapToPair(userChapter -> new Tuple2<>(userChapter._2, userChapter._1))
 				.join(chapterData)
@@ -53,75 +53,62 @@ public class ViewingFigures {
 							@Override
 							public Tuple2<Tuple2<Integer, Integer>, Integer> call(
 									Tuple2<Integer, Tuple2<Integer, Integer>> chapterUserCourse) throws Exception {
-								Integer chapter = chapterUserCourse._1;
 								Tuple2<Integer, Integer> userCourse = chapterUserCourse._2;
-								Tuple2<Integer, Integer> courseUser = new Tuple2<>(userCourse._2,
-										userCourse._1);
+								Tuple2<Integer, Integer> courseUser = new Tuple2<>(userCourse._2, userCourse._1);
 								return new Tuple2<>(courseUser, 1);
 							}
 						})
 				.reduceByKey((c1, c2) -> c1 + c2)
 				.mapToPair(
-						new PairFunction<Tuple2<Tuple2<Integer, Integer>, Integer>, Integer, Tuple2<Integer, Integer>>() {
+						new PairFunction<Tuple2<Tuple2<Integer, Integer>, Integer>, Integer, Integer>() {
 							@Override
-							public Tuple2<Integer, Tuple2<Integer, Integer>> call(
-									Tuple2<Tuple2<Integer, Integer>, Integer> courseUserViewedCount)
-									throws Exception {
+							public Tuple2<Integer, Integer> call(
+									Tuple2<Tuple2<Integer, Integer>, Integer> courseUserViewedCount) throws Exception {
 								Tuple2<Integer, Integer> courseUser = courseUserViewedCount._1;
 								Integer viewedCount = courseUserViewedCount._2;
-								Tuple2<Integer, Integer> userViewedCount = new Tuple2<>(courseUser._2, viewedCount);
-								return new Tuple2<>(courseUser._1, userViewedCount);
+								return new Tuple2<>(courseUser._1, viewedCount);
 							}
 						});
 
-		courseUserViewedCount.foreach(courseUserViewed -> System.out.println(String.format("For course[%d], %d chapters viewed by user[%d]", courseUserViewed._1, courseUserViewed._2._2, courseUserViewed._2._1)));
+		//courseViewedCount.foreach(courseUserViewed -> System.out.println(String.format("For course[%d], %d chapters viewed", courseUserViewed._1, courseUserViewed._2)));
 
-		JavaPairRDD<Integer, Tuple2<Integer, Tuple2<Integer, Integer>>> courseTotalUserViewedCount = courseTotalChapters
-				.join(courseUserViewedCount);
+		JavaPairRDD<Integer, Tuple2<Integer, Integer>> courseTotalViewedCount = courseTotalChapters
+				.join(courseViewedCount);
 
-		JavaPairRDD<Integer, Integer> courseScore = courseTotalUserViewedCount.mapToPair(
-				new PairFunction<Tuple2<Integer, Tuple2<Integer, Tuple2<Integer, Integer>>>, Integer, Integer>() {
-					@Override
-					public Tuple2<Integer, Integer> call(
-							Tuple2<Integer, Tuple2<Integer, Tuple2<Integer, Integer>>> courseTotalUserViewedCount)
-							throws Exception {
-						Integer user = courseTotalUserViewedCount._1;
-						Tuple2<Integer, Tuple2<Integer, Integer>> totalUserViewedCount = courseTotalUserViewedCount._2;
-						Integer totalCount = totalUserViewedCount._1;
-						Tuple2<Integer, Integer> userViewedCount = totalUserViewedCount._2;
-						Integer viewedCount = userViewedCount._2;
-						double percentageViewed = (viewedCount * 1.0) / totalCount;
-						int score = 0;
-						if (percentageViewed > 0.9) {
-							score = 10;
-						} else if (percentageViewed > 0.5) {
-							score = 4;
-						} else if (percentageViewed > 0.25) {
-							score = 2;
-						}
-						return new Tuple2<>(user, score);
-					}
-				});
+		JavaPairRDD<Integer, Integer> courseScore = courseTotalViewedCount.mapValues(new Function<Tuple2<Integer, Integer>, Double>() {
+			@Override
+			public Double call(Tuple2<Integer, Integer> totalViews) throws Exception {
+				Integer total = totalViews._1;
+				Integer actualViews = totalViews._2;
+				return (actualViews * 1.0) / total;
+			}
+		}).mapValues(percentage -> {
+			if (percentage > 0.9) return 10;
+			else if (percentage > 0.5) return 4;
+			else if (percentage > 0.25) return 2;
+			else return 0;
+		});
 
-		courseScore
+		JavaPairRDD<Integer, Tuple2<Integer, String>> courseScoreName = courseScore
 				.reduceByKey((score1, score2) -> score1 + score2)
-				.join(titlesData)
-				.map(new Function<Tuple2<Integer, Tuple2<Integer, String>>, Tuple2<Integer, Tuple2<Integer, Integer>>>() {
+				.join(titlesData);
+
+		int numPartitions = courseScoreName.getNumPartitions();
+		System.out.println("Number of partitions " + numPartitions);
+
+		courseScoreName
+				.mapToPair(new PairFunction<Tuple2<Integer, Tuple2<Integer, String>>, Integer, Tuple2<Integer, String>>() {
 					@Override
-					public Tuple2<Integer, Tuple2<Integer, Integer>> call(
-							Tuple2<Integer, Tuple2<Integer, String>> courseScoreTitle) throws Exception {
-						return new Tuple2(courseScoreTitle._1, new Tuple2(courseScoreTitle._2._1, courseScoreTitle._2._2));
+					public Tuple2<Integer, Tuple2<Integer, String>> call(
+							Tuple2<Integer, Tuple2<Integer, String>> scoreCourseTitle) throws Exception {
+						Integer courseId = scoreCourseTitle._1;
+						Tuple2<Integer, String> scoreName = scoreCourseTitle._2;
+						return new Tuple2<>(scoreName._1, new Tuple2<>(courseId, scoreName._2));
 					}
 				})
-				.sortBy(new Function<Tuple2<Integer, Tuple2<Integer, Integer>>, Integer>() {
-					@Override
-					public Integer call(Tuple2<Integer, Tuple2<Integer, Integer>> courseScoreTitle)
-							throws Exception {
-						return courseScoreTitle._2._1;
-					}
-				}, false, 2)
-				.collect()
-				.forEach(courseScoreTitle -> System.out.println(String.format("Course '%s'[%d] has score %d", courseScoreTitle._2._2, courseScoreTitle._1, courseScoreTitle._2._1)));
+				.sortByKey(false)
+				.coalesce(1)
+				.foreach(scoreCourseTitle -> System.out.println(String.format("Course '%s'[%d] has score %d", scoreCourseTitle._2._2, scoreCourseTitle._2._1, scoreCourseTitle._1)));
 
 		sc.close();
 	}
