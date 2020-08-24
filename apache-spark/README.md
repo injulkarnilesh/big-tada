@@ -6,7 +6,7 @@ Comes with
 * Python
 
 ## Architecture
-![Spark Ach](/src/main/resources/img/SparkArch.png)
+![Spark Arch](src/main/resources/img/SparkArch.png)
 
 ## Run
 ### Spark dependencies
