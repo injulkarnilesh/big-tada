@@ -8,11 +8,19 @@ Comes with
 ## Architecture
 ![Spark Ach](/src/main/resources/img/SparkArch.png)
 
-## Running Locally
-Spark dependencies
+## Run
+### Spark dependencies
 * spark-core
 * spark-sql
 * hadoop-hdfs
+
+### AWS Deployment
+- AWS EMR(Elastic Map Reduce) supports building pre-configured spark cluster.
+- For practice, 
+    * create cluster of few EC2s
+    * ssh into master node
+    * Have jar of spark job copied (with code only, no spark dependencies required as spark is installed on this cluster nodes)
+    * Run `spark-submit` command for the job to be run in the cluster.  
 
 ## RDD
 Create SparkContext
@@ -54,10 +62,10 @@ Collect
 - Be sure that result is small enough to fit into single JVM
 otherwise push it to storage like HDFS.
 
-AWS Deployment
-- AWS EMR(Elastic Map Reduce) supports building pre-configured spark cluster.
-- For practice, 
-    * create cluster of few EC2s
-    * ssh into master node
-    * Have jar of spark job copied (with code only, no spark dependencies required as spark is installed on this cluster nodes)
-    * Run `spark-submit` command for the job to be run in the cluster.  
+Joins
+- `JavaPairRDD` supports following joins with other `JavaPairRDD`
+   * join (inner join)
+   * leftOuterJoin
+   * rightOuterJoins
+   * fullOuterJoin
+   * cartesian
