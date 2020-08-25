@@ -1,6 +1,6 @@
-package com.virtualpairprogrammers.intro;
+package com.learn.spark.rdd;
 
-import com.virtualpairprogrammers.Util;
+import com.learn.spark.Util;
 import java.util.Arrays;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;

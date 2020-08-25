@@ -1,4 +1,4 @@
-package com.virtualpairprogrammers;
+package com.learn.spark.rdd;
 
 import java.util.ArrayList;
 import java.util.List;

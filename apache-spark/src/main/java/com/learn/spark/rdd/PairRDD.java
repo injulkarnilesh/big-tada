@@ -1,6 +1,5 @@
-package com.virtualpairprogrammers.intro;
+package com.learn.spark.rdd;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import java.util.List;
 import org.apache.spark.SparkConf;
