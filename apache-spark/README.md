@@ -152,4 +152,51 @@ otherwise push it to storage like HDFS.
    * fullOuterJoin
    * cartesian
 
-   
+
+## Spark SQL, DataFrame, DataSet
+Need SparkSession
+
+```
+SparkSession spark = SparkSession.builder()
+        .master("local[*]")
+        .appName("SomeAppName")
+        .config("spark.sql.warehouse.dir", "file///c:/tmp/")
+        .getOrCreate();
+```
+
+Spark Session has useful, readable methods to read CSV, show data in tables.
+```
+Dataset<Row> dataSet = spark.read().option("header", true)
+        .csv("file.csv");
+
+dataSet.show()
+```
+Spark SQL supports running SQL queries on dataset.
+```
+dataSet.createOrReplaceTempView("students");
+
+Dataset<Row> frenchResult = spark.sql(
+    "select student_id, subject, year, score, grade from students where subject = 'French' and year >= 2007"); 
+```
+
+Spark DataFrame API (DataSet) has all the SQL features but can be build programmatically.
+```
+Dataset<Row> logsByMonth = dataSet
+        .select(col("level"),
+            date_format(col("datetime"), "MMMM").as("month"),
+            date_format(col("datetime"), "M").as("monthnum").cast(DataTypes.IntegerType))
+        .groupBy(col("level"), col("month"), col("monthnum"))
+        .count()
+        .orderBy(col("monthnum"), col("level"))
+        .drop(col("monthnum"));
+```
+Other important features supported in Spark SQL, DataFrames
+* UDF - User Defined Functions
+* Partition over windows
+* Joins
+* Union/Intersection
+* Helper methods in `org.apache.spark.sql.functions`
+
+Spark SQL is high level API build on top of Spark RDD APIs.
+
+Performance wise using DataFrame APIs are better than SQL. RDD and DataFrame similar performance wise.
