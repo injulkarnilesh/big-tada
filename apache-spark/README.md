@@ -247,13 +247,13 @@ Spark ML Library Comes in ml (dataframe based) and mllib(rdd based, to be depcre
 		* You divide your data into training data for building model
 		* Test data for algorithm to test performance of variable config params
 		* Holdout data for you to test the algorithm
-		* To avoid overfitting our data
+		* To avoid over-fitting our data
 * Model Accuracy
-	* Parameters decide performace of the model
+	* Parameters decide performance of the model
 		* For Linear Regression
 			* RMSE - Room Mean Square Error: Smaller the better
 			* R2 (R Square): 0-1 Higher the better
-		* Values Availble in Regression model object's summary
+		* Values Available in Regression model object's summary
 		* For test data model.evaluate(testData)'s summary
 * TrainValidationSplit
 	* To try multiple combinations of params and evaluate best combinations
@@ -293,4 +293,16 @@ Spark ML Library Comes in ml (dataframe based) and mllib(rdd based, to be depcre
 * LinearRegression Class 
 	* for fit (LinearRegressionModel) and transform
 	* Also can get coeffiecents and intercept
-    
+
+### Logistic Regression
+Label is boolean 0 or 1.
+Same as Linear Regression in most of the terms like  parameters
+Accuracy is how many % predictions were correct.    
+Result
+* True Positive : Prediction correct and was 1
+* False Positive : Prediction incorrect and was 1
+* True Negative : Prediction correct and was 0
+* False Negative : Prediction incorrect and was 0
+
+Positive Accuracy: (True Positive)/(True Positive + False Positive)
+Negative Accuracy: (True Negative)/(True Negative + False Negative)
